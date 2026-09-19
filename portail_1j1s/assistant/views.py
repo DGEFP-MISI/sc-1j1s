@@ -102,11 +102,17 @@ def assistant_chat(request):
                 "principalement consulté dans un panneau étroit sur mobile."
             ),
         },
+    ]
+
+    history = get_conversation_history(request)
+
+    messages.extend(history)
+    messages.append(
         {
             "role": "user",
             "content": message,
-        },
-    ]
+        }
+    )
 
     try:
         answer = AlbertClient().chat(messages)
