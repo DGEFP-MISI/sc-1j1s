@@ -170,7 +170,6 @@ document.addEventListener("DOMContentLoaded", function () {
         submitButton.disabled = true;
 
         addMessage(question, "fr-text--md");
-        saveConversationMessage("user", question);
         input.value = "";
 
         const waitingMessage = addMessage(
@@ -200,10 +199,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             waitingMessage.innerHTML =
                 data.answer_html || "L'assistant n'a pas retourné de réponse.";
-
-            if (typeof data.answer === "string") {
-                saveConversationMessage("assistant", data.answer);
-            }
 
         } catch (error) {
             waitingMessage.textContent =
