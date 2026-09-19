@@ -25,6 +25,7 @@
 
     {% dsfr_css %}
     <link href="{% static 'css/style.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'assistant/assistant.css' %}" rel="stylesheet" type="text/css" />
 
     {% block extra_css %}
     {% endblock extra_css %}
@@ -75,6 +76,7 @@
     {% endif %}
 
     {% dsfr_js nonce=request.csp_nonce %}
+    <script src="{% static 'assistant/assistant.js' %}" defer></script>
     {% block extra_js %}
     {% endblock extra_js %}
 
