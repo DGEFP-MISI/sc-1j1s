@@ -1,11 +1,12 @@
 import json
 
 from django.http import JsonResponse
-from django.views.decorators.http import require_POST
 from django.utils import timezone
+from django.views.decorators.http import require_GET, require_POST
 
 from .services.albert import AlbertAPIError, AlbertClient
 from .services.markdown import render_assistant_markdown
+
 
 CONVERSATION_SESSION_KEY = "assistant_1j1s_conversation"
 CONVERSATION_EXPIRY_KEY = "assistant_1j1s_conversation_expiry"
@@ -50,6 +51,19 @@ def save_conversation_history(request, history):
 
     request.session[CONVERSATION_EXPIRY_KEY] = (
         timezone.now().timestamp() + CONVERSATION_LIFETIME_SECONDS
+    )
+
+
+@require_GET
+def assistant_history(request):
+    """Retourne l'historique non expiré de la conversation anonyme."""
+
+    history = get_conversation_history(request)
+
+    return JsonResponse(
+        {
+            "messages": history,
+        }
     )
 
 
@@ -104,8 +118,10 @@ def assistant_chat(request):
         },
     ]
 
+    # Récupérer les échanges précédents non expirés.
     history = get_conversation_history(request)
 
+    # Transmettre à Albert l'historique puis la nouvelle question.
     messages.extend(history)
     messages.append(
         {
@@ -114,38 +130,39 @@ def assistant_chat(request):
         }
     )
 
-        try:
-            answer = AlbertClient().chat(messages)
-        except AlbertAPIError:
-            return JsonResponse(
-                {
-                    "error": (
-                        "L'assistant est momentanément indisponible. "
-                        "Merci de réessayer."
-                    )
-                },
-                status=503,
-            )
-    
-        history.append(
-            {
-                "role": "user",
-                "content": message,
-            }
-        )
-    
-        history.append(
-            {
-                "role": "assistant",
-                "content": answer[:10000],
-            }
-        )
-    
-        save_conversation_history(request, history)
-    
+    try:
+        answer = AlbertClient().chat(messages)
+    except AlbertAPIError:
         return JsonResponse(
             {
-                "answer": answer,
-                "answer_html": render_assistant_markdown(answer),
-            }
+                "error": (
+                    "L'assistant est momentanément indisponible. "
+                    "Merci de réessayer."
+                )
+            },
+            status=503,
         )
+
+    # Enregistrer uniquement les échanges ayant reçu une réponse.
+    history.append(
+        {
+            "role": "user",
+            "content": message,
+        }
+    )
+
+    history.append(
+        {
+            "role": "assistant",
+            "content": answer[:10000],
+        }
+    )
+
+    save_conversation_history(request, history)
+
+    return JsonResponse(
+        {
+            "answer": answer,
+            "answer_html": render_assistant_markdown(answer),
+        }
+    )
