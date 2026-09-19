@@ -15,6 +15,7 @@ from config.api import api_router
 from sites_conformes.proconnect import urls as oidc_urls
 
 urlpatterns = [
+    path("assistant/", include("portail_1j1s.assistant.urls")),
     path("sitemap.xml", sitemap, name="xml_sitemap"),
     path(settings.WAGTAILADMIN_PATH, include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),
