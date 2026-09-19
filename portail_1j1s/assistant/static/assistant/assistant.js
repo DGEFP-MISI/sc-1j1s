@@ -24,6 +24,12 @@ document.addEventListener("DOMContentLoaded", function () {
     let previousFocus = null;
     let requestInProgress = false;
 
+    // Ouvrir automatiquement l'assistant sur ordinateur.
+    if (window.matchMedia("(min-width: 992px)").matches) {
+        assistant.hidden = false;
+    }
+
+    
     function openAssistant() {
         previousFocus = document.activeElement;
         assistant.hidden = false;
