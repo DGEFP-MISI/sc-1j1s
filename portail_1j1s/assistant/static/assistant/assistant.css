@@ -96,3 +96,30 @@
         bottom: 1rem;
     }
 }
+
+/* Empêcher les réponses de déborder de la sidebar */
+#assistant-ia-messages {
+    min-width: 0;
+    overflow-x: hidden;
+}
+
+#assistant-ia-messages > * {
+    overflow-wrap: anywhere;
+}
+
+/* Adapter les tableaux générés par Albert */
+#assistant-ia-messages table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+}
+
+#assistant-ia-messages th,
+#assistant-ia-messages td {
+    overflow-wrap: anywhere;
+    word-break: normal;
+    padding: 0.5rem;
+    vertical-align: top;
+}
