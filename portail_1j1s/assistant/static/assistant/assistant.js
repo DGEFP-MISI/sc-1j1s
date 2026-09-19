@@ -130,6 +130,10 @@ document.addEventListener("DOMContentLoaded", function () {
             waitingMessage.innerHTML =
                 data.answer_html || "L'assistant n'a pas retourné de réponse.";
 
+            if (data.answer_html) {
+                saveConversationMessage("assistant", data.answer_html);
+            }
+
         } catch (error) {
             waitingMessage.textContent =
                 error.message || "Impossible de contacter l'assistant.";
