@@ -103,6 +103,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "widget_tweaks",
     "dsfr",
+    "portail_1j1s.assistant.apps.AssistantConfig",
     "sites_conformes.core",
     "sites_conformes.blog",
     "sites_conformes.events",
