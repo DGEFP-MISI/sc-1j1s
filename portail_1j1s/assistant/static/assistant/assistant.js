@@ -60,6 +60,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
         messages.appendChild(message);
 
+        const information = document.createElement("p");
+        information.textContent =
+            "L'assistant est en cours de configuration. Il ne peut pas encore répondre aux questions.";
+        information.className = "fr-text--sm";
+
+        messages.appendChild(information);
+
         input.value = "";
         messages.scrollTop = messages.scrollHeight;
     });
