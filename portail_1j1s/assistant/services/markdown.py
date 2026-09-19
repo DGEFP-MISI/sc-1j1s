@@ -1,23 +1,23 @@
-import bleach
 import markdown
+import nh3
 
 
-ALLOWED_TAGS = [
+ALLOWED_TAGS = {
     "p", "br", "strong", "em", "del",
     "h2", "h3", "h4",
     "ul", "ol", "li",
     "blockquote", "code", "pre",
     "table", "thead", "tbody", "tr", "th", "td",
     "a", "hr",
-]
-
-ALLOWED_ATTRIBUTES = {
-    "a": ["href", "title"],
-    "th": ["align"],
-    "td": ["align"],
 }
 
-ALLOWED_PROTOCOLS = ["http", "https", "mailto"]
+ALLOWED_ATTRIBUTES = {
+    "a": {"href", "title"},
+    "th": {"align"},
+    "td": {"align"},
+}
+
+ALLOWED_PROTOCOLS = {"http", "https", "mailto"}
 
 
 def render_assistant_markdown(content):
@@ -28,10 +28,10 @@ def render_assistant_markdown(content):
         extensions=["extra", "sane_lists"],
     )
 
-    return bleach.clean(
+    return nh3.clean(
         html,
         tags=ALLOWED_TAGS,
         attributes=ALLOWED_ATTRIBUTES,
-        protocols=ALLOWED_PROTOCOLS,
-        strip=True,
+        url_schemes=ALLOWED_PROTOCOLS,
+        clean_content_tags={"script", "style"},
     )
