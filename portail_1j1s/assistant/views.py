@@ -2,6 +2,7 @@ import json
 
 from django.http import JsonResponse
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 
 from .services.albert import AlbertAPIError, AlbertClient
@@ -53,7 +54,7 @@ def save_conversation_history(request, history):
         timezone.now().timestamp() + CONVERSATION_LIFETIME_SECONDS
     )
 
-
+@never_cache
 @require_GET
 def assistant_history(request):
     """Retourne l'historique non expiré de la conversation anonyme."""
@@ -66,7 +67,7 @@ def assistant_history(request):
         }
     )
 
-
+@never_cache
 @require_POST
 def assistant_chat(request):
     """Reçoit une question et retourne la réponse d'Albert API."""
