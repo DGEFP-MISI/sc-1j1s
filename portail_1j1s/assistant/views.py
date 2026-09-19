@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 from .services.albert import AlbertAPIError, AlbertClient
+from .services.markdown import render_assistant_markdown
 
 
 @require_POST
@@ -70,4 +71,9 @@ def assistant_chat(request):
             status=503,
         )
 
-    return JsonResponse({"answer": answer})
+    return JsonResponse(
+        {
+            "answer": answer,
+            "answer_html": render_assistant_markdown(answer),
+        }
+    )
