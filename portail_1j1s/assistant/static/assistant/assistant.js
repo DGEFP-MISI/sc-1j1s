@@ -25,8 +25,27 @@ document.addEventListener("DOMContentLoaded", function () {
     let requestInProgress = false;
 
     const conversationStorageKey = "assistant-1j1s-conversation";
+    const conversationExpiryKey = "assistant-1j1s-conversation-expiry";
+    const conversationLifetime = 30 * 60 * 1000;
+    
+    function clearExpiredConversation() {
+        try {
+            const expiry = Number(
+                sessionStorage.getItem(conversationExpiryKey)
+            );
+    
+            if (!expiry || Date.now() >= expiry) {
+                sessionStorage.removeItem(conversationStorageKey);
+                sessionStorage.removeItem(conversationExpiryKey);
+            }
+        } catch (error) {
+            console.warn("Impossible de vérifier l'expiration de la conversation.");
+        }
+    }
 
     function saveConversationMessage(role, content) {
+        clearExpiredConversation();
+    
         try {
             const history = JSON.parse(
                 sessionStorage.getItem(conversationStorageKey) || "[]"
@@ -55,37 +74,43 @@ document.addEventListener("DOMContentLoaded", function () {
                 conversationStorageKey,
                 JSON.stringify(limitedHistory)
             );
+            sessionStorage.setItem(
+                conversationExpiryKey,
+                String(Date.now() + conversationLifetime)
+            );
         } catch (error) {
             console.warn("Impossible de sauvegarder la conversation.");
         }
     }
 
     function restoreConversation() {
-    try {
-        const history = JSON.parse(
-            sessionStorage.getItem(conversationStorageKey) || "[]"
-        );
-
-        if (!Array.isArray(history)) {
-            return;
+        clearExpiredConversation();
+    
+        try {
+            const history = JSON.parse(
+                sessionStorage.getItem(conversationStorageKey) || "[]"
+            );
+    
+            if (!Array.isArray(history)) {
+                return;
+            }
+    
+            history.forEach(function (entry) {
+                if (entry.role === "user" && typeof entry.content === "string") {
+                    addMessage(entry.content, "fr-text--md");
+                }
+    
+                if (
+                    entry.role === "assistant" &&
+                    typeof entry.content === "string"
+                ) {
+                    addMessage(entry.content, "fr-text--sm");
+                }
+            });
+        } catch (error) {
+            console.warn("Impossible de restaurer la conversation.");
         }
-
-        history.forEach(function (entry) {
-            if (entry.role === "user" && typeof entry.content === "string") {
-                addMessage(entry.content, "fr-text--md");
-            }
-
-            if (
-                entry.role === "assistant" &&
-                typeof entry.content === "string"
-            ) {
-                addMessage(entry.content, "fr-text--sm");
-            }
-        });
-    } catch (error) {
-        console.warn("Impossible de restaurer la conversation.");
     }
-}
 
     // Ouvrir automatiquement l'assistant sur ordinateur.
     if (window.matchMedia("(min-width: 992px)").matches) {
