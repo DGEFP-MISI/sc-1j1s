@@ -59,7 +59,7 @@
       {% block content %}
       {% endblock content %}
     </main>
-
+    {% include "assistant/sidebar.html" %}
     {% block follow_newsletter_social_media %}
       {% if settings.sites_conformes_core.CmsDsfrConfig.show_newsletter_and_social_block %}
         <aside id="cmsfr-block-follow">
