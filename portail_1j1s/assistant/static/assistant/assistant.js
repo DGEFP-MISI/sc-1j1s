@@ -24,6 +24,25 @@ document.addEventListener("DOMContentLoaded", function () {
     let previousFocus = null;
     let requestInProgress = false;
 
+    const conversationStorageKey = "assistant-1j1s-conversation";
+
+    function saveConversationMessage(role, content) {
+        try {
+            const history = JSON.parse(
+                sessionStorage.getItem(conversationStorageKey) || "[]"
+            );
+    
+            history.push({ role: role, content: content });
+    
+            sessionStorage.setItem(
+                conversationStorageKey,
+                JSON.stringify(history)
+            );
+        } catch (error) {
+            console.warn("Impossible de sauvegarder la conversation.");
+        }
+    }
+
     // Ouvrir automatiquement l'assistant sur ordinateur.
     if (window.matchMedia("(min-width: 992px)").matches) {
         assistant.hidden = false;
@@ -80,6 +99,7 @@ document.addEventListener("DOMContentLoaded", function () {
         submitButton.disabled = true;
 
         addMessage(question, "fr-text--md");
+        saveConversationMessage("user", question);
         input.value = "";
 
         const waitingMessage = addMessage(
