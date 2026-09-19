@@ -55,7 +55,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     entry.role === "assistant" &&
                     typeof entry.content === "string"
                 ) {
-                    addMessage(entry.content, "fr-text--sm");
+                    const message = addMessage(entry.content, "fr-text--sm");
+                
+                    if (typeof entry.content_html === "string") {
+                        message.innerHTML = entry.content_html;
+                    }
                 }
             });
         } catch (error) {
