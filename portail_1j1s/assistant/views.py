@@ -1,4 +1,5 @@
 import json
+import uuid
 
 from django.http import JsonResponse
 from django.utils import timezone
@@ -8,34 +9,50 @@ from django.views.decorators.http import require_GET, require_POST
 from .services.albert import AlbertAPIError, AlbertClient
 from .services.markdown import render_assistant_markdown
 
+from .models import AssistantConversation
 
 CONVERSATION_ID_SESSION_KEY = "assistant_1j1s_conversation_id"
-CONVERSATION_SESSION_KEY = "assistant_1j1s_conversation"
-CONVERSATION_EXPIRY_KEY = "assistant_1j1s_conversation_expiry"
 
 CONVERSATION_LIFETIME_SECONDS = 30 * 60
 CONVERSATION_MAX_MESSAGES = 20
 
-
 def get_conversation_history(request):
-    """Récupère l'historique non expiré de la conversation."""
+    """Récupère l'historique de la conversation anonyme non expirée."""
 
-    expiry = request.session.get(CONVERSATION_EXPIRY_KEY)
-    now = timezone.now().timestamp()
+    # Supprimer les anciennes données stockées dans la session Django.
+    request.session.pop("assistant_1j1s_conversation", None)
+    request.session.pop("assistant_1j1s_conversation_expiry", None)
 
-    if not isinstance(expiry, (int, float)) or now >= expiry:
-        request.session.pop(CONVERSATION_SESSION_KEY, None)
-        request.session.pop(CONVERSATION_EXPIRY_KEY, None)
+    conversation_id = request.session.get(CONVERSATION_ID_SESSION_KEY)
+
+    if not conversation_id:
         return []
 
-    history = request.session.get(CONVERSATION_SESSION_KEY, [])
+    try:
+        conversation_uuid = uuid.UUID(str(conversation_id))
+    except (ValueError, TypeError, AttributeError):
+        request.session.pop(CONVERSATION_ID_SESSION_KEY, None)
+        return []
 
-    if not isinstance(history, list):
+    conversation = AssistantConversation.objects.filter(
+        id=conversation_uuid
+    ).first()
+
+    if conversation is None:
+        request.session.pop(CONVERSATION_ID_SESSION_KEY, None)
+        return []
+
+    if timezone.now() >= conversation.expires_at:
+        conversation.delete()
+        request.session.pop(CONVERSATION_ID_SESSION_KEY, None)
+        return []
+
+    if not isinstance(conversation.messages, list):
         return []
 
     return [
         entry
-        for entry in history[-CONVERSATION_MAX_MESSAGES:]
+        for entry in conversation.messages[-CONVERSATION_MAX_MESSAGES:]
         if (
             isinstance(entry, dict)
             and entry.get("role") in ("user", "assistant")
@@ -43,17 +60,44 @@ def get_conversation_history(request):
         )
     ]
 
-
 def save_conversation_history(request, history):
-    """Enregistre un historique limité et renouvelle son expiration."""
+    """Enregistre la conversation dans la table dédiée."""
 
-    request.session[CONVERSATION_SESSION_KEY] = history[
-        -CONVERSATION_MAX_MESSAGES:
-    ]
-
-    request.session[CONVERSATION_EXPIRY_KEY] = (
-        timezone.now().timestamp() + CONVERSATION_LIFETIME_SECONDS
+    expires_at = timezone.now() + timezone.timedelta(
+        seconds=CONVERSATION_LIFETIME_SECONDS
     )
+
+    conversation_id = request.session.get(CONVERSATION_ID_SESSION_KEY)
+
+    try:
+        conversation_uuid = uuid.UUID(str(conversation_id))
+    except (ValueError, TypeError, AttributeError):
+        conversation_uuid = None
+
+    conversation = None
+
+    if conversation_uuid:
+        conversation = AssistantConversation.objects.filter(
+            id=conversation_uuid,
+            expires_at__gt=timezone.now(),
+        ).first()
+
+    if conversation is None:
+        conversation = AssistantConversation.objects.create(
+            messages=history[-CONVERSATION_MAX_MESSAGES:],
+            expires_at=expires_at,
+        )
+
+        request.session[CONVERSATION_ID_SESSION_KEY] = str(
+            conversation.id
+        )
+
+    else:
+        conversation.messages = history[-CONVERSATION_MAX_MESSAGES:]
+        conversation.expires_at = expires_at
+        conversation.save(
+            update_fields=["messages", "expires_at"]
+        )
 
 @never_cache
 @require_GET
