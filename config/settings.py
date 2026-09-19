@@ -521,6 +521,6 @@ if sentry_dsn := os.getenv("SENTRY_DSN"):
 
     sentry_sdk.init(
         dsn=sentry_dsn,
-        send_default_pii=True,
+        send_default_pii=False,
         environment=os.getenv("SENTRY_ENVIRONMENT", "production"),
     )
