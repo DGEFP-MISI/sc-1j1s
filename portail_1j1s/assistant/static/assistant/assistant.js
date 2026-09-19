@@ -43,6 +43,34 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    function restoreConversation() {
+    try {
+        const history = JSON.parse(
+            sessionStorage.getItem(conversationStorageKey) || "[]"
+        );
+
+        if (!Array.isArray(history)) {
+            return;
+        }
+
+        history.forEach(function (entry) {
+            if (entry.role === "user" && typeof entry.content === "string") {
+                addMessage(entry.content, "fr-text--md");
+            }
+
+            if (
+                entry.role === "assistant" &&
+                typeof entry.content === "string"
+            ) {
+                const message = addMessage("", "fr-text--sm");
+                message.innerHTML = entry.content;
+            }
+        });
+    } catch (error) {
+        console.warn("Impossible de restaurer la conversation.");
+    }
+}
+
     // Ouvrir automatiquement l'assistant sur ordinateur.
     if (window.matchMedia("(min-width: 992px)").matches) {
         assistant.hidden = false;
@@ -73,6 +101,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         return message;
     }
+
+    restoreConversation();
 
     document.querySelectorAll("[data-assistant-open]").forEach(function (button) {
         button.addEventListener("click", openAssistant);
