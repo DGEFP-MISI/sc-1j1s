@@ -23,80 +23,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let previousFocus = null;
     let requestInProgress = false;
+    let historyLoading = true;
 
-    const conversationStorageKey = "assistant-1j1s-conversation";
-    const conversationExpiryKey = "assistant-1j1s-conversation-expiry";
-    const conversationLifetime = 30 * 60 * 1000;
-    
-    function clearExpiredConversation() {
+    async function restoreConversation() {
         try {
-            const expiry = Number(
-                sessionStorage.getItem(conversationExpiryKey)
-            );
-    
-            if (!expiry || Date.now() >= expiry) {
-                sessionStorage.removeItem(conversationStorageKey);
-                sessionStorage.removeItem(conversationExpiryKey);
-            }
-        } catch (error) {
-            console.warn("Impossible de vérifier l'expiration de la conversation.");
-        }
-    }
-
-    function saveConversationMessage(role, content) {
-        clearExpiredConversation();
-    
-        try {
-            const history = JSON.parse(
-                sessionStorage.getItem(conversationStorageKey) || "[]"
-            );
-    
-            if (!Array.isArray(history)) {
-                return;
-            }
-            
-            if (
-                !["user", "assistant"].includes(role) ||
-                typeof content !== "string"
-            ) {
-                return;
-            }
-            
-            history.push({
-                role: role,
-                content: content.slice(0, 10000)
+            const response = await fetch("/assistant/history/", {
+                method: "GET",
+                credentials: "same-origin",
+                cache: "no-store"
             });
-            
-            // Conserver uniquement les 20 derniers messages.
-            const limitedHistory = history.slice(-20);
-            
-            sessionStorage.setItem(
-                conversationStorageKey,
-                JSON.stringify(limitedHistory)
-            );
-            sessionStorage.setItem(
-                conversationExpiryKey,
-                String(Date.now() + conversationLifetime)
-            );
-        } catch (error) {
-            console.warn("Impossible de sauvegarder la conversation.");
-        }
-    }
-
-    function restoreConversation() {
-        clearExpiredConversation();
     
-        try {
-            const history = JSON.parse(
-                sessionStorage.getItem(conversationStorageKey) || "[]"
-            );
+            if (!response.ok) {
+                throw new Error("Impossible de récupérer la conversation.");
+            }
     
-            if (!Array.isArray(history)) {
+            const data = await response.json();
+    
+            if (!Array.isArray(data.messages)) {
                 return;
             }
     
-            history.forEach(function (entry) {
-                if (entry.role === "user" && typeof entry.content === "string") {
+            data.messages.forEach(function (entry) {
+                if (
+                    entry.role === "user" &&
+                    typeof entry.content === "string"
+                ) {
                     addMessage(entry.content, "fr-text--md");
                 }
     
@@ -143,7 +94,12 @@ document.addEventListener("DOMContentLoaded", function () {
         return message;
     }
 
-    restoreConversation();
+    submitButton.disabled = true;
+
+    restoreConversation().finally(function () {
+        historyLoading = false;
+        submitButton.disabled = false;
+    });
 
     document.querySelectorAll("[data-assistant-open]").forEach(function (button) {
         button.addEventListener("click", openAssistant);
@@ -162,7 +118,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const question = input.value.trim();
 
-        if (!question || requestInProgress) {
+        if (!question || requestInProgress || historyLoading) {
             return;
         }
 
