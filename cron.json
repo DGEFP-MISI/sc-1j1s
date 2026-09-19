@@ -1,8 +1,7 @@
 {
   "jobs": [
     {
-      "command": "python manage.py purge_assistant_conversations",
-      "schedule": "*/10 * * * *"
+      "command": "*/10 * * * * python manage.py purge_assistant_conversations"
     }
   ]
 }
