@@ -27,6 +27,8 @@ dependencies = [
     "wagtailmenus>=4.0.3",
     "wagtail-modeladmin>=2.2.0",
     "wagtail-markdown>=0.12.1",
+    "markdown>=3.8,<4",
+    "bleach>=6.2,<7",
     "unidecode>=1.4.0",
     "django-storages[s3]>=1.14.6",
     "boto3==1.35.99",
