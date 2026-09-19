@@ -2,9 +2,55 @@ import json
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.utils import timezone
 
 from .services.albert import AlbertAPIError, AlbertClient
 from .services.markdown import render_assistant_markdown
+
+CONVERSATION_SESSION_KEY = "assistant_1j1s_conversation"
+CONVERSATION_EXPIRY_KEY = "assistant_1j1s_conversation_expiry"
+
+CONVERSATION_LIFETIME_SECONDS = 30 * 60
+CONVERSATION_MAX_MESSAGES = 20
+
+
+def get_conversation_history(request):
+    """Récupère l'historique non expiré de la conversation."""
+
+    expiry = request.session.get(CONVERSATION_EXPIRY_KEY)
+    now = timezone.now().timestamp()
+
+    if not isinstance(expiry, (int, float)) or now >= expiry:
+        request.session.pop(CONVERSATION_SESSION_KEY, None)
+        request.session.pop(CONVERSATION_EXPIRY_KEY, None)
+        return []
+
+    history = request.session.get(CONVERSATION_SESSION_KEY, [])
+
+    if not isinstance(history, list):
+        return []
+
+    return [
+        entry
+        for entry in history[-CONVERSATION_MAX_MESSAGES:]
+        if (
+            isinstance(entry, dict)
+            and entry.get("role") in ("user", "assistant")
+            and isinstance(entry.get("content"), str)
+        )
+    ]
+
+
+def save_conversation_history(request, history):
+    """Enregistre un historique limité et renouvelle son expiration."""
+
+    request.session[CONVERSATION_SESSION_KEY] = history[
+        -CONVERSATION_MAX_MESSAGES:
+    ]
+
+    request.session[CONVERSATION_EXPIRY_KEY] = (
+        timezone.now().timestamp() + CONVERSATION_LIFETIME_SECONDS
+    )
 
 
 @require_POST
