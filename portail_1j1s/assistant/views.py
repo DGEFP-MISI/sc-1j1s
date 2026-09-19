@@ -9,6 +9,7 @@ from .services.albert import AlbertAPIError, AlbertClient
 from .services.markdown import render_assistant_markdown
 
 
+CONVERSATION_ID_SESSION_KEY = "assistant_1j1s_conversation_id"
 CONVERSATION_SESSION_KEY = "assistant_1j1s_conversation"
 CONVERSATION_EXPIRY_KEY = "assistant_1j1s_conversation_expiry"
 
