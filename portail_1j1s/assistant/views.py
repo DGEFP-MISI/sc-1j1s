@@ -108,7 +108,18 @@ def assistant_history(request):
 
     return JsonResponse(
         {
-            "messages": history,
+            "messages": [
+                {
+                    "role": entry["role"],
+                    "content": entry["content"],
+                    "content_html": (
+                        render_assistant_markdown(entry["content"])
+                        if entry["role"] == "assistant"
+                        else None
+                    ),
+                }
+                for entry in history
+            ],
         }
     )
 
