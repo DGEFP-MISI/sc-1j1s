@@ -32,11 +32,28 @@ document.addEventListener("DOMContentLoaded", function () {
                 sessionStorage.getItem(conversationStorageKey) || "[]"
             );
     
-            history.push({ role: role, content: content });
-    
+            if (!Array.isArray(history)) {
+                return;
+            }
+            
+            if (
+                !["user", "assistant"].includes(role) ||
+                typeof content !== "string"
+            ) {
+                return;
+            }
+            
+            history.push({
+                role: role,
+                content: content.slice(0, 10000)
+            });
+            
+            // Conserver uniquement les 20 derniers messages.
+            const limitedHistory = history.slice(-20);
+            
             sessionStorage.setItem(
                 conversationStorageKey,
-                JSON.stringify(history)
+                JSON.stringify(limitedHistory)
             );
         } catch (error) {
             console.warn("Impossible de sauvegarder la conversation.");
@@ -62,8 +79,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 entry.role === "assistant" &&
                 typeof entry.content === "string"
             ) {
-                const message = addMessage("", "fr-text--sm");
-                message.innerHTML = entry.content;
+                addMessage(entry.content, "fr-text--sm");
             }
         });
     } catch (error) {
@@ -160,8 +176,8 @@ document.addEventListener("DOMContentLoaded", function () {
             waitingMessage.innerHTML =
                 data.answer_html || "L'assistant n'a pas retourné de réponse.";
 
-            if (data.answer_html) {
-                saveConversationMessage("assistant", data.answer_html);
+            if (typeof data.answer === "string") {
+                saveConversationMessage("assistant", data.answer);
             }
 
         } catch (error) {
