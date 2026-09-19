@@ -123,3 +123,20 @@
     padding: 0.5rem;
     vertical-align: top;
 }
+
+/* Réserver une colonne permanente à l'assistant sur ordinateur */
+
+@media (min-width: 992px) {
+    body:has(.assistant-ia:not([hidden])) {
+        padding-right: 440px;
+    }
+
+    .assistant-ia {
+        width: 440px;
+        box-shadow: none;
+    }
+
+    .assistant-ia__trigger {
+        display: none;
+    }
+}
