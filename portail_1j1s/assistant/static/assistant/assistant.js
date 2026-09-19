@@ -4,12 +4,25 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("assistant-ia-form");
     const input = document.getElementById("assistant-ia-input");
     const messages = document.getElementById("assistant-ia-messages");
+    const submitButton = form?.querySelector('button[type="submit"]');
+    const csrfToken = form?.querySelector(
+        'input[name="csrfmiddlewaretoken"]'
+    );
 
-    if (!assistant || !closeButton || !form || !input || !messages) {
+    if (
+        !assistant ||
+        !closeButton ||
+        !form ||
+        !input ||
+        !messages ||
+        !submitButton ||
+        !csrfToken
+    ) {
         return;
     }
 
     let previousFocus = null;
+    let requestInProgress = false;
 
     function openAssistant() {
         previousFocus = document.activeElement;
@@ -25,8 +38,16 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Permet d'ouvrir l'assistant depuis n'importe quel bouton
-    // possédant l'attribut data-assistant-open.
+    function addMessage(content, className) {
+        const message = document.createElement("p");
+        message.textContent = content;
+        message.className = className;
+
+        messages.appendChild(message);
+        messages.scrollTop = messages.scrollHeight;
+
+        return message;
+    }
 
     document.querySelectorAll("[data-assistant-open]").forEach(function (button) {
         button.addEventListener("click", openAssistant);
@@ -34,40 +55,64 @@ document.addEventListener("DOMContentLoaded", function () {
 
     closeButton.addEventListener("click", closeAssistant);
 
-    // Fermeture avec la touche Échap.
-
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape" && !assistant.hidden) {
             closeAssistant();
         }
     });
 
-    // Première version du formulaire.
-    // L'appel à Albert API sera ajouté ultérieurement.
-
-    form.addEventListener("submit", function (event) {
+    form.addEventListener("submit", async function (event) {
         event.preventDefault();
 
         const question = input.value.trim();
 
-        if (!question) {
+        if (!question || requestInProgress) {
             return;
         }
 
-        const message = document.createElement("p");
-        message.textContent = question;
-        message.className = "fr-text--md";
+        requestInProgress = true;
+        submitButton.disabled = true;
 
-        messages.appendChild(message);
-
-        const information = document.createElement("p");
-        information.textContent =
-            "L'assistant est en cours de configuration. Il ne peut pas encore répondre aux questions.";
-        information.className = "fr-text--sm";
-
-        messages.appendChild(information);
-
+        addMessage(question, "fr-text--md");
         input.value = "";
-        messages.scrollTop = messages.scrollHeight;
+
+        const waitingMessage = addMessage(
+            "L'assistant prépare sa réponse…",
+            "fr-text--sm"
+        );
+
+        try {
+            const response = await fetch("/assistant/chat/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken.value
+                },
+                body: JSON.stringify({
+                    message: question
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.error || "Une erreur est survenue."
+                );
+            }
+
+            waitingMessage.textContent =
+                data.answer || "L'assistant n'a pas retourné de réponse.";
+
+        } catch (error) {
+            waitingMessage.textContent =
+                error.message || "Impossible de contacter l'assistant.";
+
+        } finally {
+            requestInProgress = false;
+            submitButton.disabled = false;
+            messages.scrollTop = messages.scrollHeight;
+            input.focus();
+        }
     });
 });
