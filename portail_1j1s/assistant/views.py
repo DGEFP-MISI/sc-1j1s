@@ -114,22 +114,38 @@ def assistant_chat(request):
         }
     )
 
-    try:
-        answer = AlbertClient().chat(messages)
-    except AlbertAPIError:
+        try:
+            answer = AlbertClient().chat(messages)
+        except AlbertAPIError:
+            return JsonResponse(
+                {
+                    "error": (
+                        "L'assistant est momentanément indisponible. "
+                        "Merci de réessayer."
+                    )
+                },
+                status=503,
+            )
+    
+        history.append(
+            {
+                "role": "user",
+                "content": message,
+            }
+        )
+    
+        history.append(
+            {
+                "role": "assistant",
+                "content": answer[:10000],
+            }
+        )
+    
+        save_conversation_history(request, history)
+    
         return JsonResponse(
             {
-                "error": (
-                    "L'assistant est momentanément indisponible. "
-                    "Merci de réessayer."
-                )
-            },
-            status=503,
+                "answer": answer,
+                "answer_html": render_assistant_markdown(answer),
+            }
         )
-
-    return JsonResponse(
-        {
-            "answer": answer,
-            "answer_html": render_assistant_markdown(answer),
-        }
-    )
