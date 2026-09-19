@@ -101,8 +101,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
             }
 
-            waitingMessage.textContent =
-                data.answer || "L'assistant n'a pas retourné de réponse.";
+            waitingMessage.innerHTML =
+                data.answer_html || "L'assistant n'a pas retourné de réponse.";
 
         } catch (error) {
             waitingMessage.textContent =
